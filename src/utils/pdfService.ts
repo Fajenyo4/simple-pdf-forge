@@ -87,21 +87,18 @@ export class PdfService {
         imageQuality: 0.2,
         removeMetadata: true,
         flattenAnnotations: true,
-        compressContentStreams: true,
       },
       medium: {
         // Balanced approach
         imageQuality: 0.5,
         removeMetadata: true,
         flattenAnnotations: true,
-        compressContentStreams: true,
       },
       high: {
         // Maintain reasonable quality
         imageQuality: 0.7,
         removeMetadata: true,
         flattenAnnotations: false,
-        compressContentStreams: true,
       },
     };
     
@@ -139,10 +136,9 @@ export class PdfService {
       compressedPdf.addPage(copiedPage);
     }
     
-    // Compression options for the output
+    // Compression options for the output - remove the 'compress' property which doesn't exist in SaveOptions
     const compressionOptions = {
       objectsPerTick: quality === 'low' ? 50 : quality === 'medium' ? 100 : 200,
-      compress: true,
       useObjectStreams: true,
       addDefaultPage: false,
       updateFieldAppearances: false, // Skip form field appearance updates
@@ -157,9 +153,7 @@ export class PdfService {
     }
     
     // Save with enhanced compression options
-    const compressedBytes = await compressedPdf.save({
-      ...compressionOptions
-    });
+    const compressedBytes = await compressedPdf.save(compressionOptions);
     
     console.log(`Compressed PDF size: ${compressedBytes.byteLength} bytes`);
     const compressionRatio = (originalSize - compressedBytes.byteLength) / originalSize;
@@ -245,11 +239,10 @@ export class PdfService {
     // Quality-specific deeper compression
     const compressionLevel = quality === 'low' ? 0.1 : quality === 'medium' ? 0.4 : 0.7;
     
-    // Apply maximum compression on the PDF binary data
+    // Apply maximum compression on the PDF binary data - fixed to use only valid SaveOptions properties
     return pdfDoc.save({
       useObjectStreams: true,
       addDefaultPage: false,
-      compress: true,
       objectsPerTick: 20, // Lower value means more aggressive compression
       updateFieldAppearances: false,
     });
