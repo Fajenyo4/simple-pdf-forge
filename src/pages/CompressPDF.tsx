@@ -10,6 +10,7 @@ import { PdfService } from '@/utils/pdfService';
 import { toast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { AlertCircle, CheckCircle, FileDown } from "lucide-react";
 
 const CompressPDF = () => {
   const [files, setFiles] = useState<File[]>([]);
@@ -18,6 +19,7 @@ const CompressPDF = () => {
   const [quality, setQuality] = useState<'low' | 'medium' | 'high'>('medium');
   const [originalSize, setOriginalSize] = useState<number>(0);
   const [compressedSize, setCompressedSize] = useState<number>(0);
+  const [compressedPdfBytes, setCompressedPdfBytes] = useState<Uint8Array | null>(null);
 
   const handleFilesDrop = (uploadedFiles: File[]) => {
     // Only allow single file for compressing
@@ -25,13 +27,16 @@ const CompressPDF = () => {
     setFiles([pdfFile]);
     setOriginalSize(pdfFile.size);
     setCompressedSize(0);
+    setCompressedPdfBytes(null);
     setStatus('idle');
+    console.log(`File selected: ${pdfFile.name}, size: ${pdfFile.size} bytes`);
   };
 
   const handleRemoveFile = (file: File) => {
     setFiles(files.filter(f => f !== file));
     setOriginalSize(0);
     setCompressedSize(0);
+    setCompressedPdfBytes(null);
     setStatus('idle');
   };
 
@@ -57,6 +62,18 @@ const CompressPDF = () => {
     return `${reduction.toFixed(1)}%`;
   };
 
+  const handleDownload = async () => {
+    if (!compressedPdfBytes || !files[0]) return;
+    
+    const outputFileName = `${files[0].name.replace('.pdf', '')}_compressed.pdf`;
+    await PdfService.savePdfAsBlob(compressedPdfBytes, outputFileName);
+    
+    toast({
+      title: "Download Started",
+      description: `Your compressed PDF is being downloaded as ${outputFileName}`,
+    });
+  };
+
   const handleCompress = async () => {
     if (files.length === 0) {
       toast({
@@ -70,27 +87,25 @@ const CompressPDF = () => {
     setStatus('processing');
     setProgress(10);
     setCompressedSize(0);
+    setCompressedPdfBytes(null);
 
     try {
       // Process the PDF
-      setProgress(30);
+      setProgress(20);
       
       console.log(`Compressing PDF with quality: ${quality}`);
       console.log(`Original size: ${originalSize} bytes`);
       
       const compressedPdf = await PdfService.compressPdf(files[0], quality);
-      setProgress(70);
+      setProgress(80);
 
       // Calculate compressed size based on the Uint8Array length
       const compressedSizeBytes = compressedPdf.byteLength;
       setCompressedSize(compressedSizeBytes);
+      setCompressedPdfBytes(compressedPdf);
       
       console.log(`Compressed size: ${compressedSizeBytes} bytes`);
       console.log(`Compression ratio: ${calculateCompressionRate()}`);
-      
-      // Save the result
-      const outputFileName = `${files[0].name.replace('.pdf', '')}_compressed.pdf`;
-      await PdfService.savePdfAsBlob(compressedPdf, outputFileName);
       
       setProgress(100);
       setStatus('success');
@@ -98,7 +113,7 @@ const CompressPDF = () => {
       const reductionRate = calculateCompressionRate();
       
       // Only show success if actually compressed
-      if (compressedSizeBytes < originalSize) {
+      if (compressedSizeBytes < originalSize * 0.98) { // If at least 2% reduction
         toast({
           title: "Success",
           description: `PDF compressed successfully! Reduced by ${reductionRate}`,
@@ -107,6 +122,7 @@ const CompressPDF = () => {
         toast({
           title: "Notice",
           description: "The PDF could not be compressed further with these settings.",
+          variant: "default"
         });
       }
     } catch (error) {
@@ -143,7 +159,7 @@ const CompressPDF = () => {
               
               {compressedSize > 0 && status === 'success' && (
                 <div className="mt-4 p-4 border rounded-lg bg-white">
-                  <h2 className="font-medium mb-2">Compression Results</h2>
+                  <h2 className="font-medium mb-4">Compression Results</h2>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <p className="text-gray-600">Original Size:</p>
@@ -155,11 +171,28 @@ const CompressPDF = () => {
                     </div>
                     <div className="col-span-2">
                       <p className="text-gray-600">Reduction:</p>
-                      <p className={`font-medium ${compressedSize < originalSize ? 'text-green-600' : 'text-orange-500'}`}>
-                        {compressedSize < originalSize ? calculateCompressionRate() : "No reduction achieved"}
-                      </p>
+                      <div className="flex items-center gap-1">
+                        {compressedSize < originalSize * 0.98 ? (
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <AlertCircle className="h-4 w-4 text-orange-500" />
+                        )}
+                        <p className={`font-medium ${compressedSize < originalSize * 0.98 ? 'text-green-600' : 'text-orange-500'}`}>
+                          {compressedSize < originalSize * 0.98 ? calculateCompressionRate() : "Minimal or no reduction achieved"}
+                        </p>
+                      </div>
                     </div>
                   </div>
+                  
+                  {compressedSize < originalSize && (
+                    <Button 
+                      onClick={handleDownload} 
+                      className="mt-4 w-full"
+                      variant="secondary"
+                    >
+                      <FileDown className="mr-2 h-4 w-4" /> Download Compressed PDF
+                    </Button>
+                  )}
                 </div>
               )}
               
