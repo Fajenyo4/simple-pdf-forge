@@ -1,10 +1,11 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 210 40% 98%;
     --foreground: 222.2 84% 4.9%;
 
     --card: 0 0% 100%;
@@ -13,7 +14,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
+    --primary: 213 76% 49%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -30,7 +31,7 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --ring: 213 76% 49%;
 
     --radius: 0.5rem;
 
@@ -61,8 +62,8 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 213 76% 49%;
+    --primary-foreground: 210 40% 98%;
 
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -78,7 +79,7 @@
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --ring: 224.3 76.3% 48%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -98,4 +99,28 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Custom file input styling */
+.file-drop-area {
+  @apply relative p-6 border-2 border-dashed border-gray-300 rounded-lg 
+  transition-all duration-300 bg-white hover:border-primary;
+}
+
+.file-drop-area.drag-active {
+  @apply border-primary bg-blue-50;
+}
+
+/* PDF thumbnail styles */
+.pdf-thumbnail {
+  @apply overflow-hidden rounded shadow-md transition-all duration-200;
+}
+
+.pdf-thumbnail:hover {
+  @apply shadow-lg transform -translate-y-1;
+}
+
+/* Tool card hover effects */
+.tool-card {
+  @apply transition-all duration-300 hover:shadow-xl hover:scale-[1.02];
 }
