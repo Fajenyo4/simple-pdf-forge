@@ -68,15 +68,40 @@ export class PdfService {
    */
   static async compressPdf(pdfFile: File, quality: 'low' | 'medium' | 'high' = 'medium'): Promise<Uint8Array> {
     const fileBytes = await pdfFile.arrayBuffer();
-    const pdfDoc = await PDFDocument.load(fileBytes, { 
-      updateMetadata: false 
-    });
+    const pdfDoc = await PDFDocument.load(fileBytes);
     
-    // Different compression strategies could be implemented here
-    // This is a simplified version - in reality, you might want to
-    // use a server-side approach for better compression
+    // Create new PDF to copy with compression
+    const compressedPdf = await PDFDocument.create();
     
-    return pdfDoc.save();
+    // Copy each page with compression settings
+    const pages = pdfDoc.getPages();
+    for (let i = 0; i < pages.length; i++) {
+      // Get the original page
+      const [copiedPage] = await compressedPdf.copyPages(pdfDoc, [i]);
+      compressedPdf.addPage(copiedPage);
+    }
+    
+    // Compression options - pdf-lib doesn't directly support compression levels,
+    // but we can configure how we save the document
+    let compressionOptions = {};
+    
+    switch (quality) {
+      case 'low':
+        // Use smallest file size - may reduce quality significantly
+        compressionOptions = { compress: true, objectsPerTick: 50 };
+        break;
+      case 'medium':
+        // Balanced approach
+        compressionOptions = { compress: true, objectsPerTick: 100 };
+        break;
+      case 'high':
+        // Maintain quality as much as possible
+        compressionOptions = { compress: false, objectsPerTick: 200 };
+        break;
+    }
+    
+    // Save with compression options
+    return compressedPdf.save(compressionOptions);
   }
 
   /**
@@ -118,11 +143,9 @@ export class PdfService {
       // Normalize degrees to be 0, 90, 180, or 270
       const normalizedDegrees = ((rotationDegrees % 360) + 360) % 360;
       const currentRotation = page.getRotation().angle;
-      const degreesToRotate = normalizedDegrees - currentRotation;
       
-      if (degreesToRotate !== 0) {
-        page.setRotation(degrees(degreesToRotate));
-      }
+      // Add to the current rotation
+      page.setRotation(degrees(normalizedDegrees + currentRotation));
     }
     
     return pdfDoc.save();

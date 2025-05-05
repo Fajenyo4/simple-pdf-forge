@@ -7,16 +7,23 @@ export const usePdfJs = () => {
   useEffect(() => {
     // Import and initialize PDF.js
     const loadPdfJs = async () => {
-      if (!(window as any).pdfjsLib) {
-        const pdfjs = await import('pdfjs-dist');
+      try {
+        if (!(window as any).pdfjsLib) {
+          const pdfjs = await import('pdfjs-dist');
+          
+          // Import the worker directly instead of using CDN
+          const pdfjsWorker = await import('pdfjs-dist/build/pdf.worker.mjs');
+          
+          // Set the worker source to the worker constructor
+          pdfjs.GlobalWorkerOptions.workerPort = new pdfjsWorker.PDFWorkerConstructor();
+          
+          (window as any).pdfjsLib = pdfjs;
+        }
         
-        // Use a CDN approach to load the worker
-        pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
-        
-        (window as any).pdfjsLib = pdfjs;
+        setIsLoaded(true);
+      } catch (error) {
+        console.error('Error loading PDF.js:', error);
       }
-      
-      setIsLoaded(true);
     };
     
     loadPdfJs();
