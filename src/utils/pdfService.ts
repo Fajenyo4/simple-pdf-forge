@@ -1,5 +1,5 @@
 
-import { PDFDocument, PDFPage, PageSizes, rgb } from 'pdf-lib';
+import { PDFDocument, PageSizes, rgb, degrees } from 'pdf-lib';
 
 export interface ProcessingOptions {
   rotation?: number;
@@ -76,11 +76,7 @@ export class PdfService {
     // This is a simplified version - in reality, you might want to
     // use a server-side approach for better compression
     
-    return pdfDoc.save({
-      // The actual compression settings would depend on the backend implementation
-      // This is just a placeholder structure
-      compress: true,
-    });
+    return pdfDoc.save();
   }
 
   /**
@@ -103,7 +99,7 @@ export class PdfService {
         font,
         opacity,
         color: rgb(0.5, 0.5, 0.5),
-        rotate: Math.PI / 4, // 45 degrees in radians
+        rotate: degrees(45), // Using degrees() helper function for rotation
       });
     }
     
@@ -113,18 +109,19 @@ export class PdfService {
   /**
    * Rotate pages in a PDF file
    */
-  static async rotatePdf(pdfFile: File, degrees: number): Promise<Uint8Array> {
+  static async rotatePdf(pdfFile: File, rotationDegrees: number): Promise<Uint8Array> {
     const fileBytes = await pdfFile.arrayBuffer();
     const pdfDoc = await PDFDocument.load(fileBytes);
     const pages = pdfDoc.getPages();
     
     for (const page of pages) {
       // Normalize degrees to be 0, 90, 180, or 270
-      const normalizedDegrees = ((degrees % 360) + 360) % 360;
-      const degreesToRotate = normalizedDegrees - page.getRotation().angle;
+      const normalizedDegrees = ((rotationDegrees % 360) + 360) % 360;
+      const currentRotation = page.getRotation().angle;
+      const degreesToRotate = normalizedDegrees - currentRotation;
       
       if (degreesToRotate !== 0) {
-        page.setRotation(degreesToRotate);
+        page.setRotation(degrees(degreesToRotate));
       }
     }
     
