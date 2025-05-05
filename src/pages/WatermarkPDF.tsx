@@ -19,7 +19,7 @@ const WatermarkPDF = () => {
   const [watermarkText, setWatermarkText] = useState('CONFIDENTIAL');
   const [opacity, setOpacity] = useState(0.3);
 
-  const handleFileUpload = (uploadedFiles: File[]) => {
+  const handleFilesDrop = (uploadedFiles: File[]) => {
     // Only allow single file for watermarking
     const pdfFile = uploadedFiles[0];
     setFiles([pdfFile]);
@@ -88,7 +88,7 @@ const WatermarkPDF = () => {
 
           {files.length === 0 ? (
             <FileDropZone 
-              onFilesDrop={handleFileUpload} 
+              onFilesDrop={handleFilesDrop} 
               accept=".pdf"
               multiple={false}
             />

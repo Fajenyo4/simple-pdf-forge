@@ -15,7 +15,7 @@ const RotatePDF = () => {
   const [progress, setProgress] = useState(0);
   const [rotation, setRotation] = useState<number>(90);
 
-  const handleFileUpload = (uploadedFiles: File[]) => {
+  const handleFilesDrop = (uploadedFiles: File[]) => {
     // Only allow single file for rotating
     const pdfFile = uploadedFiles[0];
     setFiles([pdfFile]);
@@ -75,7 +75,7 @@ const RotatePDF = () => {
 
           {files.length === 0 ? (
             <FileDropZone 
-              onFilesDrop={handleFileUpload} 
+              onFilesDrop={handleFilesDrop} 
               accept=".pdf"
               multiple={false}
             />

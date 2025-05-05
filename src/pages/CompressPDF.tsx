@@ -17,7 +17,7 @@ const CompressPDF = () => {
   const [progress, setProgress] = useState(0);
   const [quality, setQuality] = useState<'low' | 'medium' | 'high'>('medium');
 
-  const handleFileUpload = (uploadedFiles: File[]) => {
+  const handleFilesDrop = (uploadedFiles: File[]) => {
     // Only allow single file for compressing
     const pdfFile = uploadedFiles[0];
     setFiles([pdfFile]);
@@ -77,7 +77,7 @@ const CompressPDF = () => {
 
           {files.length === 0 ? (
             <FileDropZone 
-              onFilesDrop={handleFileUpload} 
+              onFilesDrop={handleFilesDrop} 
               accept=".pdf"
               multiple={false}
             />
