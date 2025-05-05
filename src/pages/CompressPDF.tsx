@@ -77,7 +77,7 @@ const CompressPDF = () => {
 
           {files.length === 0 ? (
             <FileDropZone 
-              onFileUpload={handleFileUpload} 
+              onFilesDrop={handleFileUpload} 
               accept=".pdf"
               multiple={false}
             />

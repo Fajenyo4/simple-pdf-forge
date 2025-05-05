@@ -9,9 +9,10 @@ export const usePdfJs = () => {
     const loadPdfJs = async () => {
       if (!(window as any).pdfjsLib) {
         const pdfjs = await import('pdfjs-dist');
-        const pdfjsWorker = await import('pdfjs-dist/build/pdf.worker.entry');
         
-        pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+        // Use a different approach to load the worker
+        pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+        
         (window as any).pdfjsLib = pdfjs;
       }
       
@@ -21,7 +22,7 @@ export const usePdfJs = () => {
     loadPdfJs();
   }, []);
 
-  return { isLoaded };
+  return { isLoaded, getDocument: (window as any).pdfjsLib?.getDocument };
 };
 
 export default usePdfJs;

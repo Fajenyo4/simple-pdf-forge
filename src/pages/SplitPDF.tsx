@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import FileDropZone from '@/components/FileDropZone';
@@ -10,6 +10,7 @@ import { PdfService } from '@/utils/pdfService';
 import { toast } from '@/hooks/use-toast';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Slider } from "@/components/ui/slider";
+import usePdfJs from '@/hooks/usePdfJs';
 
 const SplitPDF = () => {
   const [files, setFiles] = useState<File[]>([]);
@@ -17,6 +18,7 @@ const SplitPDF = () => {
   const [progress, setProgress] = useState(0);
   const [pageRange, setPageRange] = useState<{ start: number; end: number }>({ start: 1, end: 1 });
   const [totalPages, setTotalPages] = useState(1);
+  const { isLoaded } = usePdfJs();
 
   const handleFileUpload = (uploadedFiles: File[]) => {
     // Only allow single file for splitting
@@ -24,13 +26,31 @@ const SplitPDF = () => {
     setFiles([pdfFile]);
     
     // Get page count to update range
-    getPageCount(pdfFile);
+    if (isLoaded && pdfFile) {
+      getPageCount(pdfFile);
+    }
   };
+
+  useEffect(() => {
+    if (isLoaded && files.length > 0) {
+      getPageCount(files[0]);
+    }
+  }, [isLoaded, files]);
 
   const getPageCount = async (file: File) => {
     try {
       const arrayBuffer = await file.arrayBuffer();
-      const pdfDoc = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const pdfjsLib = (window as any).pdfjsLib;
+      if (!pdfjsLib) {
+        toast({
+          title: "Error",
+          description: "PDF.js library is not loaded yet. Please try again in a moment.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       const count = pdfDoc.numPages;
       setTotalPages(count);
       setPageRange({ start: 1, end: count });
@@ -103,7 +123,7 @@ const SplitPDF = () => {
 
           {files.length === 0 ? (
             <FileDropZone 
-              onFileUpload={handleFileUpload} 
+              onFilesDrop={handleFileUpload} 
               accept=".pdf"
               multiple={false}
             />
