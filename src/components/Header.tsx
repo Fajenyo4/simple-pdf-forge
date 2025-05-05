@@ -2,8 +2,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Header = () => {
+  const { user, signOut } = useAuth();
+
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-white py-3">
       <div className="container flex h-14 items-center justify-between">
@@ -17,12 +20,24 @@ const Header = () => {
         <nav className="hidden md:flex items-center space-x-4">
           <Link to="/tools" className="text-sm font-medium text-gray-700 hover:text-pdf-blue transition">All Tools</Link>
           <Link to="/about" className="text-sm font-medium text-gray-700 hover:text-pdf-blue transition">About</Link>
-          <Button variant="ghost" size="sm" asChild>
-            <Link to="/login">Login</Link>
-          </Button>
-          <Button size="sm" asChild>
-            <Link to="/signup">Sign Up</Link>
-          </Button>
+          
+          {user ? (
+            <>
+              <span className="text-sm font-medium text-gray-700">{user.email}</span>
+              <Button variant="ghost" size="sm" onClick={() => signOut()}>
+                Logout
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/login">Login</Link>
+              </Button>
+              <Button size="sm" asChild>
+                <Link to="/signup">Sign Up</Link>
+              </Button>
+            </>
+          )}
         </nav>
 
         <Button variant="outline" size="icon" className="md:hidden">
