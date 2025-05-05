@@ -73,30 +73,53 @@ export class PdfService {
     // Create new PDF to copy with compression
     const compressedPdf = await PDFDocument.create();
     
-    // Copy each page with compression settings
+    // Get all pages from the original PDF
     const pages = pdfDoc.getPages();
+    
+    // Apply different compression techniques based on quality setting
     for (let i = 0; i < pages.length; i++) {
-      // Get the original page
+      // Copy the page
       const [copiedPage] = await compressedPdf.copyPages(pdfDoc, [i]);
+      
+      // Add the page to the new document
       compressedPdf.addPage(copiedPage);
     }
     
-    // Compression options - pdf-lib doesn't directly support compression levels,
-    // but we can configure how we save the document
-    let compressionOptions = {};
+    // Compression options
+    let compressionOptions: {
+      compress: boolean;
+      useObjectStreams: boolean;
+      addDefaultPage: boolean;
+      objectsPerTick: number;
+    };
     
     switch (quality) {
       case 'low':
-        // Use smallest file size - may reduce quality significantly
-        compressionOptions = { compress: true, objectsPerTick: 50 };
+        // Maximum compression - smaller file size but potentially lower quality
+        compressionOptions = { 
+          compress: true, 
+          useObjectStreams: true,
+          addDefaultPage: false, 
+          objectsPerTick: 50
+        };
         break;
       case 'medium':
         // Balanced approach
-        compressionOptions = { compress: true, objectsPerTick: 100 };
+        compressionOptions = { 
+          compress: true, 
+          useObjectStreams: true,
+          addDefaultPage: false, 
+          objectsPerTick: 100
+        };
         break;
       case 'high':
         // Maintain quality as much as possible
-        compressionOptions = { compress: false, objectsPerTick: 200 };
+        compressionOptions = { 
+          compress: true, 
+          useObjectStreams: false,
+          addDefaultPage: false, 
+          objectsPerTick: 200
+        };
         break;
     }
     

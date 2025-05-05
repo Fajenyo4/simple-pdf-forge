@@ -16,15 +16,37 @@ const CompressPDF = () => {
   const [status, setStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
   const [progress, setProgress] = useState(0);
   const [quality, setQuality] = useState<'low' | 'medium' | 'high'>('medium');
+  const [originalSize, setOriginalSize] = useState<number>(0);
+  const [compressedSize, setCompressedSize] = useState<number>(0);
 
   const handleFilesDrop = (uploadedFiles: File[]) => {
     // Only allow single file for compressing
     const pdfFile = uploadedFiles[0];
     setFiles([pdfFile]);
+    setOriginalSize(pdfFile.size);
+    setCompressedSize(0);
   };
 
   const handleRemoveFile = (file: File) => {
     setFiles(files.filter(f => f !== file));
+    setOriginalSize(0);
+    setCompressedSize(0);
+  };
+
+  const formatFileSize = (sizeInBytes: number): string => {
+    if (sizeInBytes < 1024) {
+      return sizeInBytes + ' bytes';
+    } else if (sizeInBytes < 1024 * 1024) {
+      return (sizeInBytes / 1024).toFixed(1) + ' KB';
+    } else {
+      return (sizeInBytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+  };
+
+  const calculateCompressionRate = (): string => {
+    if (!originalSize || !compressedSize) return "0%";
+    const reduction = ((originalSize - compressedSize) / originalSize) * 100;
+    return `${reduction.toFixed(1)}%`;
   };
 
   const handleCompress = async () => {
@@ -45,6 +67,10 @@ const CompressPDF = () => {
       setProgress(30);
       const compressedPdf = await PdfService.compressPdf(files[0], quality);
       setProgress(70);
+
+      // Calculate compressed size based on the Uint8Array length
+      const compressedSizeBytes = compressedPdf.byteLength;
+      setCompressedSize(compressedSizeBytes);
       
       // Save the result
       const outputFileName = `${files[0].name.replace('.pdf', '')}_compressed.pdf`;
@@ -52,9 +78,11 @@ const CompressPDF = () => {
       
       setProgress(100);
       setStatus('success');
+      
+      const reductionRate = calculateCompressionRate();
       toast({
         title: "Success",
-        description: "PDF compressed successfully!",
+        description: `PDF compressed successfully! Reduced by ${reductionRate}`,
       });
     } catch (error) {
       console.error('Error compressing PDF:', error);
@@ -87,6 +115,26 @@ const CompressPDF = () => {
                 files={files} 
                 onRemove={handleRemoveFile} 
               />
+              
+              {compressedSize > 0 && status === 'success' && (
+                <div className="mt-4 p-4 border rounded-lg bg-white">
+                  <h2 className="font-medium mb-2">Compression Results</h2>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-600">Original Size:</p>
+                      <p className="font-medium">{formatFileSize(originalSize)}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">Compressed Size:</p>
+                      <p className="font-medium">{formatFileSize(compressedSize)}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-gray-600">Reduction:</p>
+                      <p className="font-medium text-green-600">{calculateCompressionRate()}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
               
               <div className="mt-6 p-4 border rounded-lg bg-white">
                 <h2 className="font-medium mb-4">Compression Quality</h2>
