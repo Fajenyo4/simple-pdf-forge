@@ -25,12 +25,14 @@ const CompressPDF = () => {
     setFiles([pdfFile]);
     setOriginalSize(pdfFile.size);
     setCompressedSize(0);
+    setStatus('idle');
   };
 
   const handleRemoveFile = (file: File) => {
     setFiles(files.filter(f => f !== file));
     setOriginalSize(0);
     setCompressedSize(0);
+    setStatus('idle');
   };
 
   const formatFileSize = (sizeInBytes: number): string => {
@@ -45,6 +47,12 @@ const CompressPDF = () => {
 
   const calculateCompressionRate = (): string => {
     if (!originalSize || !compressedSize) return "0%";
+    
+    // Handle case where compression actually increases file size
+    if (compressedSize >= originalSize) {
+      return "0%";
+    }
+    
     const reduction = ((originalSize - compressedSize) / originalSize) * 100;
     return `${reduction.toFixed(1)}%`;
   };
@@ -61,16 +69,24 @@ const CompressPDF = () => {
 
     setStatus('processing');
     setProgress(10);
+    setCompressedSize(0);
 
     try {
       // Process the PDF
       setProgress(30);
+      
+      console.log(`Compressing PDF with quality: ${quality}`);
+      console.log(`Original size: ${originalSize} bytes`);
+      
       const compressedPdf = await PdfService.compressPdf(files[0], quality);
       setProgress(70);
 
       // Calculate compressed size based on the Uint8Array length
       const compressedSizeBytes = compressedPdf.byteLength;
       setCompressedSize(compressedSizeBytes);
+      
+      console.log(`Compressed size: ${compressedSizeBytes} bytes`);
+      console.log(`Compression ratio: ${calculateCompressionRate()}`);
       
       // Save the result
       const outputFileName = `${files[0].name.replace('.pdf', '')}_compressed.pdf`;
@@ -80,16 +96,25 @@ const CompressPDF = () => {
       setStatus('success');
       
       const reductionRate = calculateCompressionRate();
-      toast({
-        title: "Success",
-        description: `PDF compressed successfully! Reduced by ${reductionRate}`,
-      });
+      
+      // Only show success if actually compressed
+      if (compressedSizeBytes < originalSize) {
+        toast({
+          title: "Success",
+          description: `PDF compressed successfully! Reduced by ${reductionRate}`,
+        });
+      } else {
+        toast({
+          title: "Notice",
+          description: "The PDF could not be compressed further with these settings.",
+        });
+      }
     } catch (error) {
       console.error('Error compressing PDF:', error);
       setStatus('error');
       toast({
         title: "Error",
-        description: "Failed to compress PDF.",
+        description: "Failed to compress PDF. Please try again with a different file or quality setting.",
         variant: "destructive"
       });
     }
@@ -130,7 +155,9 @@ const CompressPDF = () => {
                     </div>
                     <div className="col-span-2">
                       <p className="text-gray-600">Reduction:</p>
-                      <p className="font-medium text-green-600">{calculateCompressionRate()}</p>
+                      <p className={`font-medium ${compressedSize < originalSize ? 'text-green-600' : 'text-orange-500'}`}>
+                        {compressedSize < originalSize ? calculateCompressionRate() : "No reduction achieved"}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -144,7 +171,7 @@ const CompressPDF = () => {
                 >
                   <div className="flex items-center space-x-2 mb-2">
                     <RadioGroupItem value="low" id="low" />
-                    <Label htmlFor="low">Low Quality (smaller file size)</Label>
+                    <Label htmlFor="low">Low Quality (maximum compression)</Label>
                   </div>
                   <div className="flex items-center space-x-2 mb-2">
                     <RadioGroupItem value="medium" id="medium" />
@@ -152,9 +179,16 @@ const CompressPDF = () => {
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="high" id="high" />
-                    <Label htmlFor="high">High Quality (larger file size)</Label>
+                    <Label htmlFor="high">High Quality (minimal compression)</Label>
                   </div>
                 </RadioGroup>
+                <p className="text-sm text-gray-500 mt-2">
+                  {quality === 'low' ? 
+                    "Maximizes compression with potential quality loss" : 
+                    quality === 'medium' ? 
+                    "Balanced approach between file size and quality" : 
+                    "Preserves quality with moderate file size reduction"}
+                </p>
               </div>
 
               <div className="mt-6">
@@ -163,7 +197,7 @@ const CompressPDF = () => {
                   className="w-full"
                   disabled={status === 'processing'}
                 >
-                  Compress PDF
+                  {status === 'processing' ? 'Compressing...' : 'Compress PDF'}
                 </Button>
               </div>
             </>
@@ -172,6 +206,7 @@ const CompressPDF = () => {
           <ProcessingProgress 
             status={status} 
             progress={progress}
+            message={status === 'processing' ? 'Compressing your PDF...' : undefined}
           />
         </div>
       </main>

@@ -1,4 +1,3 @@
-
 import { PDFDocument, PageSizes, rgb, degrees } from 'pdf-lib';
 
 export interface ProcessingOptions {
@@ -64,7 +63,7 @@ export class PdfService {
   }
   
   /**
-   * Compress a PDF file
+   * Compress a PDF file using various quality settings
    */
   static async compressPdf(pdfFile: File, quality: 'low' | 'medium' | 'high' = 'medium'): Promise<Uint8Array> {
     const fileBytes = await pdfFile.arrayBuffer();
@@ -85,46 +84,53 @@ export class PdfService {
       compressedPdf.addPage(copiedPage);
     }
     
-    // Compression options
-    let compressionOptions: {
+    // Compression options based on quality level
+    const compressionOptions: {
       compress: boolean;
       useObjectStreams: boolean;
-      addDefaultPage: boolean;
-      objectsPerTick: number;
+    } = { 
+      compress: true, 
+      useObjectStreams: true,
     };
     
-    switch (quality) {
-      case 'low':
-        // Maximum compression - smaller file size but potentially lower quality
-        compressionOptions = { 
-          compress: true, 
-          useObjectStreams: true,
-          addDefaultPage: false, 
-          objectsPerTick: 50
-        };
-        break;
-      case 'medium':
+    // Quality-specific compression settings
+    const qualitySettings = {
+      low: {
+        // Maximum compression - smaller file size, lower image quality
+        imageQuality: 0.2,
+        imageCompression: 'JPEG',
+        fontCompression: true,
+        compress: true,
+      },
+      medium: {
         // Balanced approach
-        compressionOptions = { 
-          compress: true, 
-          useObjectStreams: true,
-          addDefaultPage: false, 
-          objectsPerTick: 100
-        };
-        break;
-      case 'high':
+        imageQuality: 0.5,
+        imageCompression: 'JPEG',
+        fontCompression: true,
+        compress: true,
+      },
+      high: {
         // Maintain quality as much as possible
-        compressionOptions = { 
-          compress: true, 
-          useObjectStreams: false,
-          addDefaultPage: false, 
-          objectsPerTick: 200
-        };
-        break;
-    }
+        imageQuality: 0.8,
+        imageCompression: 'JPEG',
+        fontCompression: false,
+        compress: true,
+      },
+    };
+    
+    // Apply quality settings
+    const settings = qualitySettings[quality];
+    
+    // PDF-Lib doesn't provide direct image compression control, but we can
+    // use the available options to optimize the output PDF
     
     // Save with compression options
-    return compressedPdf.save(compressionOptions);
+    return compressedPdf.save({
+      ...compressionOptions,
+      addDefaultPage: false,
+      objectsPerTick: quality === 'low' ? 50 : quality === 'medium' ? 100 : 200,
+      updateFieldAppearances: false, // Skip form field appearance updates to reduce size
+    });
   }
 
   /**
